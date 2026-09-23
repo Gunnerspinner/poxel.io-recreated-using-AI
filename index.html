@@ -3,131 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Module 4: Advanced Trigonometry Canvas Exercise</title>
+    <title>Module 4: Matrix Alignment Diagnostics</title>
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-            user-select: none;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0d0e12;
+            margin: 0; padding: 0; overflow: hidden;
+            width: 100%; height: 100%; user-select: none;
+            font-family: monospace; background-color: #0d0e12;
         }
-
-        #canvas-container {
-            width: 100%;
-            height: 100%;
-        }
-
+        #canvas-container { width: 100%; height: 100%; cursor: crosshair; }
+        
         #target-node {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 8px;
-            height: 8px;
-            transform: translate(-50%, -50%);
+            position: absolute; top: 50%; left: 50%;
+            width: 12px; height: 12px; transform: translate(-50%, -50%);
             pointer-events: none;
-            display: none;
         }
-        #target-node::before, #target-node::after {
-            content: '';
-            position: absolute;
-            background: #00ffcc;
-        }
-        #target-node::before { top: 3px; left: -6px; width: 20px; height: 2px; }
-        #target-node::after { top: -6px; left: 3px; width: 2px; height: 20px; }
+        #target-node::before, #target-node::after { content: ''; position: absolute; background: #00ffcc; }
+        #target-node::before { top: 5px; left: -6px; width: 24px; height: 2px; }
+        #target-node::after { top: -6px; left: 5px; width: 2px; height: 24px; }
 
         #diagnostic-panel {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            color: #00ffcc;
-            font-size: 14px;
-            font-family: monospace;
-            pointer-events: none;
-            display: none;
-            line-height: 1.5;
-            background: rgba(0,0,0,0.5);
-            padding: 10px;
-            border-radius: 4px;
+            position: absolute; top: 15px; left: 15px;
+            color: #00ffcc; font-size: 14px; pointer-events: none;
+            line-height: 1.5; background: rgba(0,0,0,0.7);
+            padding: 12px; border-radius: 4px; border: 1px solid #00ffcc;
         }
-
         #matrix-buffer {
-            position: absolute;
-            bottom: 15px;
-            right: 20px;
-            color: #ff0055;
-            font-size: 24px;
-            font-family: monospace;
-            pointer-events: none;
-            display: none;
+            position: absolute; bottom: 15px; right: 20px;
+            color: #ff0055; font-size: 24px; pointer-events: none;
         }
-
         .overlay-frame {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: #0d0e12;
-            color: #ffffff;
-            z-index: 10;
-            text-align: center;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; background: #0d0e12; color: #ffffff; z-index: 10; text-align: center;
         }
-
-        .overlay-frame h1 {
-            font-size: 32px;
-            color: #00ffcc;
-            margin-bottom: 10px;
-        }
-
-        .overlay-frame p {
-            font-size: 14px;
-            color: #7a899e;
-            margin-bottom: 25px;
-            max-width: 450px;
-            line-height: 1.5;
-        }
-
+        .overlay-frame h1 { font-size: 28px; color: #00ffcc; margin-bottom: 10px; }
+        .overlay-frame p { font-size: 14px; color: #7a899e; margin-bottom: 25px; max-width: 480px; line-height: 1.6; }
         .action-trigger {
-            padding: 12px 35px;
-            font-size: 16px;
-            background: transparent;
-            border: 2px solid #00ffcc;
-            color: #00ffcc;
-            font-family: inherit;
-            cursor: pointer;
-            border-radius: 4px;
+            padding: 12px 35px; font-size: 16px; background: transparent;
+            border: 2px solid #00ffcc; color: #00ffcc; cursor: pointer; font-family: inherit;
         }
-
-        .action-trigger:hover {
-            background: rgba(0, 255, 204, 0.1);
-        }
-
-        #terminated-frame {
-            display: none;
-            background: #120d0e;
-        }
+        .action-trigger:hover { background: rgba(0, 255, 204, 0.15); }
+        #terminated-frame { display: none; background: #120d0e; }
         #terminated-frame h1 { color: #ff0055; }
         #terminated-frame .action-trigger { border-color: #ff0055; color: #ff0055; }
-        #terminated-frame .action-trigger:hover { background: rgba(255, 0, 85, 0.1); }
-
         #impact-flash {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 0, 50, 0.2);
-            pointer-events: none;
-            opacity: 0;
-            z-index: 5;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 0, 50, 0.25); pointer-events: none; opacity: 0; z-index: 5;
         }
     </style>
     <script src="https://cloudflare.com"></script>
@@ -138,25 +59,25 @@
     <div id="target-node"></div>
     
     <div id="diagnostic-panel">
-        METRIC_A: <span id="val-a">0</span><br>
-        ITERATION: <span id="val-b">1</span><br>
-        INTEGRITY: <span id="val-c">100</span>%<br>
-        REFRESH: <span id="val-d">60</span>Hz
+        METRIC_VAL: <span id="val-a">0</span><br>
+        ITERATION : <span id="val-b">1</span><br>
+        INTEGRITY : <span id="val-c">100</span>%<br>
+        PROJ_MODE : <span id="val-d">ACTIVE</span>
     </div>
 
     <div id="matrix-buffer">CHARGE: <span id="val-e">30</span>/30</div>
 
     <div id="init-frame" class="overlay-frame">
-        <h1>Vector Field Workspace Analysis</h1>
-        <p>Mathematical environment calculation engine. Click below to map data vectors, synchronize peripheral device controls, and initialize runtime operations.</p>
-        <button class="action-trigger" id="run-init">INITIALIZE WORKSPACE</button>
+        <h1>Vector Space Diagnostics</h1>
+        <p>Chromebook Iframe-Safe Controller Ready. Move your mouse to aim. Use <b>WASD</b> to move around.<br><br>To launch elements: <b>LEFT-CLICK</b>, press <b>ENTER</b>, or press <b>E</b>.<br>To cycle memory reload: Press <b>R</b>.</p>
+        <button class="action-trigger" id="run-init">START SYSTEM</button>
     </div>
 
     <div id="terminated-frame" class="overlay-frame">
-        <h1>Runtime Core Reset Required</h1>
-        <p>The vector workspace experienced an structural overflow boundary error.</p>
-        <p style="font-size: 20px; color: #fff;">FINAL METRIC: <span id="final-metrics">0</span></p>
-        <button class="action-trigger" id="run-reboot">REBOOT RUNTIME</button>
+        <h1>Overrun Detected</h1>
+        <p>The vector layout exceeded safety baseline integrity points.</p>
+        <p style="font-size: 20px;">SCORE METRIC: <span id="final-metrics">0</span></p>
+        <button class="action-trigger" id="run-reboot">REBOOT FIELD</button>
     </div>
 
     <div id="canvas-container"></div>
@@ -166,8 +87,7 @@
         let systemClock = new THREE.Clock();
         
         let dynamicA = false, dynamicB = false, dynamicC = false, dynamicD = false;
-        let axisReady = false;
-        let lockState = false;
+        let activeRuntime = false;
         let cycleReset = false;
 
         let deltaVector = new THREE.Vector3();
@@ -180,26 +100,26 @@
         let boundingVolumeB = new THREE.Box3();
         let boundingVolumeC = new THREE.Box3();
 
-        const QUANTUM_SPEED = 45.0;
+        // Mouse angle tracking coordinates (Alternative to PointerLock Controls)
+        let targetPitch = 0;
+        let targetYaw = 0;
+
+        const QUANTUM_SPEED = 40.0;
         const GRAVITATIONAL_CONSTANT = 35.0; 
-        const FORCE_VECTOR = 13.5;
 
         let metricData = 0, currentIteration = 1, structuralIntegrity = 100, clusterCapacity = 30;
         let trackedMatrices = [];
         let projectionNodes = [];
         let dissipationArrays = [];
         let focalApparatus;
-        let standardRestPosition = new THREE.Vector3(0.25, -0.25, -0.5);
+        let standardRestPosition = new THREE.Vector3(0.2, -0.2, -0.4);
         let kickbackDelta = 0;
-
-        let trackingTimer = performance.now();
-        let calculationFrames = 0;
         let structuralBarriers = [];
 
         function buildWorkspace() {
             hostScene = new THREE.Scene();
             hostScene.background = new THREE.Color(0x0d0e12);
-            hostScene.fog = new THREE.FogExp2(0x0d0e12, 0.02);
+            hostScene.fog = new THREE.FogExp2(0x0d0e12, 0.025);
 
             primaryNode = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 150);
             primaryNode.position.set(0, 2, 0);
@@ -209,11 +129,8 @@
             renderEngine.setPixelRatio(1);
             document.getElementById('canvas-container').appendChild(renderEngine.domElement);
 
-            const ambientSource = new THREE.AmbientLight(0xffffff, 0.3);
-            hostScene.add(ambientSource);
-
-            const balanceSource = new THREE.HemisphereLight(0x00ffcc, 0xff0055, 0.6);
-            hostScene.add(balanceSource);
+            hostScene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            hostScene.add(new THREE.HemisphereLight(0x00ffcc, 0xff0055, 0.5));
 
             generateGridArray();
             generateApparatus();
@@ -226,53 +143,77 @@
         }
 
         function generateGridArray() {
-            const floorGeo = new THREE.PlaneGeometry(160, 160);
-            const floorMat = new THREE.MeshBasicMaterial({ color: 0x0a0b0e });
-            const groundPlane = new THREE.Mesh(floorGeo, floorMat);
-            groundPlane.rotation.x = -Math.PI / 2;
-            hostScene.add(groundPlane);
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), new THREE.MeshBasicMaterial({ color: 0x090a0d }));
+            floor.rotation.x = -Math.PI / 2;
+            hostScene.add(floor);
 
-            const gridLines = new THREE.GridHelper(160, 40, 0x00ffcc, 0x161920);
+            const gridLines = new THREE.GridHelper(160, 40, 0x00ffcc, 0x14171f);
             gridLines.position.y = 0.005;
             hostScene.add(gridLines);
 
+            // Level walls bounding markers
             structuralBarriers.push(new THREE.Box3(new THREE.Vector3(-80,-2,-80), new THREE.Vector3(-78,30,80)));
             structuralBarriers.push(new THREE.Box3(new THREE.Vector3(78,-2,-80), new THREE.Vector3(80,30,80)));
             structuralBarriers.push(new THREE.Box3(new THREE.Vector3(-80,-2,-80), new THREE.Vector3(80,30,-78)));
             structuralBarriers.push(new THREE.Box3(new THREE.Vector3(-80,-2,78), new THREE.Vector3(80,30,80)));
 
-            const nodePalette = [0x00ffcc, 0xff0055, 0x1f192e];
-            for (let i = 0; i < 20; i++) { 
+            const nodePalette = [0x00ffcc, 0xff0055, 0x1a1526];
+            for (let i = 0; i < 15; i++) { 
                 const h = Math.floor(Math.random() * 8) + 4;
-                const w = 3;
-                
-                const structuralGeo = new THREE.BoxGeometry(w, h, w);
-                const structuralMat = new THREE.MeshBasicMaterial({
-                    color: nodePalette[Math.floor(Math.random() * nodePalette.length)],
-                });
-
-                const column = new THREE.Mesh(structuralGeo, structuralMat);
-                let cx = (Math.random() - 0.5) * 120;
-                let cz = (Math.random() - 0.5) * 120;
-                
-                if (Math.abs(cx) < 12 && Math.abs(cz) < 12) { cx += 20; cz += 20; }
-
+                const w = 4;
+                const column = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), new THREE.MeshBasicMaterial({
+                    color: nodePalette[Math.floor(Math.random() * nodePalette.length)]
+                }));
+                let cx = (Math.random() - 0.5) * 110;
+                let cz = (Math.random() - 0.5) * 110;
+                if (Math.abs(cx) < 15 && Math.abs(cz) < 15) { cx += 25; cz += 25; }
                 column.position.set(cx, h / 2, cz);
                 hostScene.add(column);
-
                 structuralBarriers.push(new THREE.Box3().setFromObject(column));
             }
         }
 
         function generateApparatus() {
-            const apparatusGroup = new THREE.Group();
+            focalApparatus = new THREE.Group();
+            focalApparatus.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.35), new THREE.MeshBasicMaterial({ color: 0x1a1c24 })));
             
-            const internalCoreGeo = new THREE.BoxGeometry(0.08, 0.08, 0.4);
-            const internalCoreMat = new THREE.MeshBasicMaterial({ color: 0x1a1c24 });
-            const chassis = new THREE.Mesh(internalCoreGeo, internalCoreMat);
-            apparatusGroup.add(chassis);
+            const tip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.05), new THREE.MeshBasicMaterial({ color: 0x00ffcc }));
+            tip.position.z = -0.18;
+            focalApparatus.add(tip);
 
-            const terminalNodeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.05);
-            const terminalNodeMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
-            const terminalNode = new THREE.Mesh(terminalNodeGeo, terminalNodeMat);
-            terminalNode.position.z = -0.21;apparatusGroup.add(terminalNode);focalApparatus = apparatusGroup;focalApparatus.position.copy(standardRestPosition);primaryNode.add(focalApparatus);hostScene.add(primaryNode);}function establishLinkages() {const initBtn = document.getElementById('run-init');const rebootBtn = document.getElementById('run-reboot');const initFrame = document.getElementById('init-frame');const terminatedFrame = document.getElementById('terminated-frame');const lockCapture = () => { document.body.requestPointerLock(); };initBtn.addEventListener('click', lockCapture);rebootBtn.addEventListener('click', () => { wipeDataArrays(); lockCapture(); });document.addEventListener('pointerlockchange', () => {if (document.pointerLockElement === document.body) {lockState = true;initFrame.style.display = 'none';terminatedFrame.style.display = 'none';document.getElementById('diagnostic-panel').style.display = 'block';document.getElementById('matrix-buffer').style.display = 'block';document.getElementById('target-node').style.display = 'block';} else {lockState = false;if(structuralIntegrity > 0) initFrame.style.display = 'flex';}});document.addEventListener('keydown', (e) => {if (!lockState) return;switch (e.code) {case 'KeyW': dynamicA = true; break;case 'KeyA': dynamicC = true; break;case 'KeyS': dynamicB = true; break;case 'KeyD': dynamicD = true; break;case 'Space': if (axisReady) deltaVector.y += FORCE_VECTOR; axisReady = false; break;case 'KeyR': initializeCycleReset(); break;}});document.addEventListener('keyup', (e) => {switch (e.code) {case 'KeyW': dynamicA = false; break;case 'KeyA': dynamicC = false; break;case 'KeyS': dynamicB = false; break;case 'KeyD': dynamicD = false; break;}});document.addEventListener('mousemove', (e) => {if (!lockState) return;primaryNode.rotation.y -= e.movementX * 0.0025;primaryNode.rotation.x -= e.movementY * 0.0025;primaryNode.rotation.x = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, primaryNode.rotation.x));});document.addEventListener('mousedown', (e) => {if (lockState && e.button === 0) transmitProjection();});}function initializeCycleReset() {if (cycleReset || clusterCapacity === 30) return;cycleReset = true;document.getElementById('val-e').innerText = "RST";let initialTime = performance.now();function cycleAnimation() {let currentFraction = (performance.now() - initialTime) / 1000;if (currentFraction < 0.6) {focalApparatus.position.y = standardRestPosition.y - (Math.sin(currentFraction * Math.PI) * 0.25);requestAnimationFrame(cycleAnimation);} else {focalApparatus.position.copy(standardRestPosition);clusterCapacity = 30;document.getElementById('val-e').innerText = clusterCapacity;cycleReset = false;}}cycleAnimation();}function transmitProjection() {if (clusterCapacity <= 0 || cycleReset) { initializeCycleReset(); return; }clusterCapacity--;document.getElementById('val-e').innerText = clusterCapacity;kickbackDelta = 0.08;const elementGeo = new THREE.BoxGeometry(0.04, 0.04, 0.25);const elementMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });const singleNode = new THREE.Mesh(elementGeo, elementMat);focalApparatus.getWorldPosition(apparatusOrigin);singleNode.position.copy(apparatusOrigin);singleNode.rotation.copy(primaryNode.rotation);primaryNode.getWorldDirection(relativeLook);singleNode.userData = {trajectory: relativeLook.clone().multiplyScalar(110),duration: 1.2};projectionNodes.push(singleNode);hostScene.add(singleNode);}function deployMatrices() {document.getElementById('val-b').innerText = currentIteration;let allocationLimit = 3 + Math.min(currentIteration * 2, 12);for (let i = 0; i < allocationLimit; i++) { generateMatrixPoint(); }}function generateMatrixPoint() {const systemGroup = new THREE.Group();const densityMesh = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), new THREE.MeshBasicMaterial({ color: 0xff0055 }));systemGroup.add(densityMesh);const frameworkMesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.15, 1.4), new THREE.MeshBasicMaterial({ color: 0x1f192e }));systemGroup.add(frameworkMesh);let rx = (Math.random() - 0.5) * 130;let rz = (Math.random() - 0.5) * 130;if (Math.abs(rx - primaryNode.position.x) < 15) rx += 30;if (Math.abs(rz - primaryNode.position.z) < 15) rz += 30;systemGroup.position.set(rx, 2, rz);systemGroup.userData = {integrityValue: 1 + Math.floor(currentIteration * 0.4),velocityScalar: 7 + Math.min(currentIteration * 0.5, 10),phaseShift: Math.random() * 50};trackedMatrices.push(systemGroup);hostScene.add(systemGroup);}function triggerDissipation(pos, targetColor) {const limit = 6;const fragmentGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);const fragmentMat = new THREE.MeshBasicMaterial({ color: targetColor });for (let i = 0; i < limit; i++) {const frag = new THREE.Mesh(fragmentGeo, fragmentMat);frag.position.copy(pos);frag.userData = {momentum: new THREE.Vector3((Math.random() - 0.5) * 6, (Math.random()) * 5, (Math.random() - 0.5) * 6),lifespan: 0.4};dissipationArrays.push(frag);hostScene.add(frag);}}function resetViewport() {primaryNode.aspect = window.innerWidth / window.innerHeight;primaryNode.updateProjectionMatrix();renderEngine.setSize(window.innerWidth, window.innerHeight);}function restrictRuntime() {document.exitPointerLock();lockState = false;document.getElementById('final-metrics').innerText = metricData;document.getElementById('terminated-frame').style.display = 'flex';document.getElementById('diagnostic-panel').style.display = 'none';document.getElementById('matrix-buffer').style.display = 'none';document.getElementById('target-node').style.display = 'none';}function wipeDataArrays() {metricData = 0; currentIteration = 1; structuralIntegrity = 100; clusterCapacity = 30;document.getElementById('val-a').innerText = metricData;document.getElementById('val-b').innerText = currentIteration;document.getElementById('val-c').innerText = structuralIntegrity;document.getElementById('val-e').innerText = clusterCapacity;trackedMatrices.forEach(m => hostScene.remove(m));projectionNodes.forEach(p => hostScene.remove(p));dissipationArrays.forEach(d => hostScene.remove(d));trackedMatrices = []; projectionNodes = []; dissipationArrays = [];primaryNode.position.set(0, 2, 0);primaryNode.rotation.set(0, 0, 0);deployMatrices();}function executeEngineLoop() {requestAnimationFrame(executeEngineLoop);let frameTime = systemClock.getDelta();if (frameTime > 0.05) frameTime = 0.05;calculationFrames++;let currentTimestamp = performance.now();if (currentTimestamp >= trackingTimer + 1000) {document.getElementById('val-d').innerText = Math.round((calculationFrames * 1000) / (currentTimestamp - trackingTimer));calculationFrames = 0; trackingTimer = currentTimestamp;}if (lockState && structuralIntegrity > 0) {computeLocomotion(frameTime);computeProjections(frameTime);computeMatrices(frameTime);computeFX(frameTime);}renderEngine.render(hostScene, primaryNode);}function computeLocomotion(dt) {deltaVector.x -= deltaVector.x * 12.0 * dt;deltaVector.z -= deltaVector.z * 12.0 * dt;deltaVector.y -= GRAVITATIONAL_CONSTANT * dt;targetDirection.z = Number(dynamicA) - Number(dynamicB);targetDirection.x = Number(dynamicD) - Number(dynamicC);targetDirection.normalize();primaryNode.getWorldDirection(relativeLook);mathForward.set(relativeLook.x, 0, relativeLook.z).normalize();mathRight.set().crossVectors(primaryNode.up, mathForward).normalize();if (dynamicA || dynamicB) deltaVector.z += targetDirection.z * QUANTUM_SPEED * dt;if (dynamicC || dynamicD) deltaVector.x += targetDirection.x * QUANTUM_SPEED * dt;const cacheX = primaryNode.position.x;const cacheZ = primaryNode.position.z;primaryNode.position.x += (mathForward.x * deltaVector.z + mathRight.x * deltaVector.x) * dt;boundingVolumeC.set(new THREE.Vector3(primaryNode.position.x - 0.5, primaryNode.position.y - 1.5, primaryNode.position.z - 0.5),new THREE.Vector3(primaryNode.position.x + 0.5, primaryNode.position.y + 0.3, primaryNode.position.z + 0.5));for(let box of structuralBarriers) { if(boundingVolumeC.intersectsBox(box)) { primaryNode.position.x = cacheX; break; } }primaryNode.position.z += (mathForward.z * deltaVector.z + mathRight.z * deltaVector.x) * dt;boundingVolumeC.set(new THREE.Vector3(primaryNode.position.x - 0.5, primaryNode.position.y - 1.5, primaryNode.position.z - 0.5),new THREE.Vector3(primaryNode.position.x + 0.5, primaryNode.position.y + 0.3, primaryNode.position.z + 0.5));for(let box of structuralBarriers) { if(boundingVolumeC.intersectsBox(box)) { primaryNode.position.z = cacheZ; break; } }primaryNode.position.y += deltaVector.y * dt;if (primaryNode.position.y < 2) { deltaVector.y = 0; primaryNode.position.y = 2; axisReady = true; }}function computeProjections(dt) {for (let i = projectionNodes.length - 1; i >= 0; i--) {const node = projectionNodes[i];node.position.addScaledVector(node.userData.trajectory, dt);node.userData.duration -= dt;let intercept = false;boundingVolumeA.set(new THREE.Vector3(node.position.x - 0.1, node.position.y - 0.1, node.position.z - 0.1),new THREE.Vector3(node.position.x + 0.1, node.position.y + 0.1, node.position.z + 0.1));for (let box of structuralBarriers) {if (boundingVolumeA.intersectsBox(box)) {triggerDissipation(node.position, 0x00ffcc);hostScene.remove(node); projectionNodes.splice(i, 1);intercept = true; break;}}if (intercept) continue;for (let j = trackedMatrices.length - 1; j >= 0; j--) {const matrixNode = trackedMatrices[j];boundingVolumeB.setFromObject(matrixNode);if (boundingVolumeA.intersectsBox(boundingVolumeB)) {hostScene.remove(node); projectionNodes.splice(i, 1);intercept = true;matrixNode.userData.integrityValue--;if (matrixNode.userData.integrityValue <= 0) {triggerDissipation(matrixNode.position, 0xff0055);hostScene.remove(matrixNode); trackedMatrices.splice(j, 1);metricData += 100;document.getElementById('val-a').innerText = metricData;if (trackedMatrices.length === 0) { currentIteration++; deployMatrices(); }} else {triggerDissipation(node.position, 0xffffff);}break;}}if (!intercept && node.userData.duration <= 0) { hostScene.remove(node); projectionNodes.splice(i, 1); }}}function computeMatrices(dt) {const anchorPoint = primaryNode.position;for (let i = trackedMatrices.length - 1; i >= 0; i--) {const item = trackedMatrices[i];item.children.rotation.y += 2 * dt;item.children.rotation.x += 2 * dt;const dynamicVector = new THREE.Vector3().subVectors(anchorPoint, item.position);const magnitude = dynamicVector.length();dynamicVector.normalize();item.position.addScaledVector(dynamicVector, item.userData.velocityScalar * dt);item.position.y = 2.0 + Math.sin(systemClock.getElapsedTime() * 4 + item.userData.phaseShift) * 0.5;if (magnitude < 1.5) {structuralIntegrity -= 10;document.getElementById('val-c').innerText = Math.max(0, structuralIntegrity);const flashOverlay = document.getElementById('impact-flash');flashOverlay.style.opacity = '1';setTimeout(() => flashOverlay.style.opacity = '0', 60);item.position.addScaledVector(dynamicVector, -5.0);if (structuralIntegrity <= 0) restrictRuntime();}}}function computeFX(dt) {if (kickbackDelta > 0) {kickbackDelta -= dt;focalApparatus.position.z = standardRestPosition.z + 0.05;} else {focalApparatus.position.lerp(standardRestPosition, 12 * dt);}for (let i = dissipationArrays.length - 1; i >= 0; i--) {const element = dissipationArrays[i];element.position.addScaledVector(element.userData.momentum, dt);element.userData.momentum.y -= 9.8 * dt;element.userData.lifespan -= dt;if (element.userData.lifespan <= 0) { hostScene.remove(element); dissipationArrays.splice(i, 1); }}}window.onload = buildWorkspace;
+            focalApparatus.position.copy(standardRestPosition);
+            primaryNode.add(focalApparatus);
+            hostScene.add(primaryNode);
+        }
+
+        function establishLinkages() {
+            const initBtn = document.getElementById('run-init');
+            const rebootBtn = document.getElementById('run-reboot');
+
+            const startAction = () => {
+                activeRuntime = true;
+                document.getElementById('init-frame').style.display = 'none';
+                document.getElementById('terminated-frame').style.display = 'none';
+            };
+
+            initBtn.addEventListener('click', startAction);
+            rebootBtn.addEventListener('click', () => { wipeDataArrays(); startAction(); });
+
+            // Keyboard Handling
+            document.addEventListener('keydown', (e) => {
+                if (!activeRuntime) return;
+                switch (e.code) {
+                    case 'KeyW': dynamicA = true; break;
+                    case 'KeyA': dynamicC = true; break;
+                    case 'KeyS': dynamicB = true; break;
+                    case 'KeyD': dynamicD = true; break;
+                    case 'KeyE': case 'Enter': transmitProjection(); break; 
+                    case 'KeyR': initializeCycleReset(); break;
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                switch (e.code) {
+                    case 'KeyW': dynamicA = false; break;
+                    case 'KeyA': dynamicC = false; break;
+case 'KeyS': dynamicB = false; break;case 'KeyD': dynamicD = false; break;}});// Smooth Multi-Direction Tracking Mappingdocument.addEventListener('mousemove', (e) => {if (!activeRuntime) return;// Calculates angular orientation steps relative to the screen dimensionsconst percentX = (e.clientX / window.innerWidth) - 0.5;const percentY = (e.clientY / window.innerHeight) - 0.5;targetYaw = -percentX * 2.5;targetPitch = -percentY * 1.5;});// Standard fallback mouse action trigger listenerdocument.addEventListener('mousedown', (e) => {if (activeRuntime && e.button === 0) {transmitProjection();e.preventDefault();}});}function initializeCycleReset() {if (cycleReset || clusterCapacity === 30) return;cycleReset = true;document.getElementById('val-e').innerText = "RST";let initialTime = performance.now();function cycleAnimation() {let currentFraction = (performance.now() - initialTime) / 1000;if (currentFraction < 0.4) {focalApparatus.position.y = standardRestPosition.y - (Math.sin(currentFraction * Math.PI) * 0.2);requestAnimationFrame(cycleAnimation);} else {focalApparatus.position.copy(standardRestPosition);clusterCapacity = 30;document.getElementById('val-e').innerText = clusterCapacity;cycleReset = false;}}cycleAnimation();}function transmitProjection() {if (clusterCapacity <= 0 || cycleReset) { initializeCycleReset(); return; }clusterCapacity--;document.getElementById('val-e').innerText = clusterCapacity;kickbackDelta = 0.08;const singleNode = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.25), new THREE.MeshBasicMaterial({ color: 0x00ffcc }));focalApparatus.getWorldPosition(apparatusOrigin);singleNode.position.copy(apparatusOrigin);singleNode.rotation.copy(primaryNode.rotation);primaryNode.getWorldDirection(relativeLook);singleNode.userData = { trajectory: relativeLook.clone().multiplyScalar(100), duration: 1.5 };projectionNodes.push(singleNode);hostScene.add(singleNode);}function deployMatrices() {document.getElementById('val-b').innerText = currentIteration;let allocationLimit = 4 + Math.min(currentIteration * 2, 10);for (let i = 0; i < allocationLimit; i++) { generateMatrixPoint(); }}function generateMatrixPoint() {const systemGroup = new THREE.Group();systemGroup.add(new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), new THREE.MeshBasicMaterial({ color: 0xff0055 })));systemGroup.add(new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.15, 1.3), new THREE.MeshBasicMaterial({ color: 0x1f192e })));let rx = (Math.random() - 0.5) * 120;let rz = (Math.random() - 0.5) * 120;if (Math.abs(rx - primaryNode.position.x) < 15) rx += 30;if (Math.abs(rz - primaryNode.position.z) < 15) rz += 30;systemGroup.position.set(rx, 2, rz);systemGroup.userData = {integrityValue: 1 + Math.floor(currentIteration * 0.3),velocityScalar: 6 + Math.min(currentIteration * 0.4, 9),phaseShift: Math.random() * 50};trackedMatrices.push(systemGroup);hostScene.add(systemGroup);}function triggerDissipation(pos, targetColor) {for (let i = 0; i < 5; i++) {const frag = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshBasicMaterial({ color: targetColor }));frag.position.copy(pos);frag.userData = { momentum: new THREE.Vector3((Math.random() - 0.5) * 5, (Math.random()) * 4, (Math.random() - 0.5) * 5), lifespan: 0.4 };dissipationArrays.push(frag);hostScene.add(frag);}}function resetViewport() {primaryNode.aspect = window.innerWidth / window.innerHeight;primaryNode.updateProjectionMatrix();renderEngine.setSize(window.innerWidth, window.innerHeight);}function restrictRuntime() {activeRuntime = false;document.getElementById('final-metrics').innerText = metricData;document.getElementById('terminated-frame').style.display = 'flex';}function wipeDataArrays() {metricData = 0; currentIteration = 1; structuralIntegrity = 100; clusterCapacity = 30;document.getElementById('val-a').innerText = metricData;document.getElementById('val-b').innerText = currentIteration;document.getElementById('val-c').innerText = structuralIntegrity;document.getElementById('val-e').innerText = clusterCapacity;trackedMatrices.forEach(m => hostScene.remove(m));projectionNodes.forEach(p => hostScene.remove(p));dissipationArrays.forEach(d => hostScene.remove(d));trackedMatrices = []; projectionNodes = []; dissipationArrays = [];primaryNode.position.set(0, 2, 0);targetYaw = 0; targetPitch = 0;deployMatrices();}function executeEngineLoop() {requestAnimationFrame(executeEngineLoop);let frameTime = systemClock.getDelta();if (frameTime > 0.05) frameTime = 0.05;if (activeRuntime && structuralIntegrity > 0) {// Ease rotation matrices towards alignment values smoothlyprimaryNode.rotation.y += (targetYaw - primaryNode.rotation.y) * 0.15;primaryNode.rotation.x += (targetPitch - primaryNode.rotation.x) * 0.15;computeLocomotion(frameTime);computeProjections(frameTime);computeMatrices(frameTime);computeFX(frameTime);}renderEngine.render(hostScene, primaryNode);}function computeLocomotion(dt) {deltaVector.x -= deltaVector.x * 10.0 * dt;deltaVector.z -= deltaVector.z * 10.0 * dt;deltaVector.y -= GRAVITATIONAL_CONSTANT * dt;targetDirection.z = Number(dynamicA) - Number(dynamicB);targetDirection.x = Number(dynamicD) - Number(dynamicC);targetDirection.normalize();primaryNode.getWorldDirection(relativeLook);mathForward.set(relativeLook.x, 0, relativeLook.z).normalize();mathRight.set().crossVectors(primaryNode.up, mathForward).normalize();if (dynamicA || dynamicB) deltaVector.z += targetDirection.z * QUANTUM_SPEED * dt;if (dynamicC || dynamicD) deltaVector.x += targetDirection.x * QUANTUM_SPEED * dt;const cacheX = primaryNode.position.x;const cacheZ = primaryNode.position.z;primaryNode.position.x += (mathForward.x * deltaVector.z + mathRight.x * deltaVector.x) * dt;boundingVolumeC.set(new THREE.Vector3(primaryNode.position.x - 0.5, primaryNode.position.y - 1.5, primaryNode.position.z - 0.5),new THREE.Vector3(primaryNode.position.x + 0.5, primaryNode.position.y + 0.3, primaryNode.position.z + 0.5));for(let box of structuralBarriers) { if(boundingVolumeC.intersectsBox(box)) { primaryNode.position.x = cacheX; break; } }primaryNode.position.z += (mathForward.z * deltaVector.z + mathRight.z * deltaVector.x) * dt;boundingVolumeC.set(new THREE.Vector3(primaryNode.position.x - 0.5, primaryNode.position.y - 1.5, primaryNode.position.z - 0.5),new THREE.Vector3(primaryNode.position.x + 0.5, primaryNode.position.y + 0.3, primaryNode.position.z + 0.5));for(let box of structuralBarriers) { if(boundingVolumeC.intersectsBox(box)) { primaryNode.position.z = cacheZ; break; } }primaryNode.position.y += deltaVector.y * dt;if (primaryNode.position.y < 2) { deltaVector.y = 0; primaryNode.position.y = 2; }}function computeProjections(dt) {for (let i = projectionNodes.length - 1; i >= 0; i--) {const node = projectionNodes[i];node.position.addScaledVector(node.userData.trajectory, dt);node.userData.duration -= dt;let intercept = false;boundingVolumeA.set(new THREE.Vector3(node.position.x - 0.1, node.position.y - 0.1, node.position.z - 0.1),new THREE.Vector3(node.position.x + 0.1, node.position.y + 0.1, node.position.z + 0.1));for (let box of structuralBarriers) {if (boundingVolumeA.intersectsBox(box)) {triggerDissipation(node.position, 0x00ffcc);hostScene.remove(node); projectionNodes.splice(i, 1);intercept = true; break;}}if (intercept) continue;for (let j = trackedMatrices.length - 1; j >= 0; j--) {const matrixNode = trackedMatrices[j];boundingVolumeB.setFromObject(matrixNode);if (boundingVolumeA.intersectsBox(boundingVolumeB)) {hostScene.remove(node); projectionNodes.splice(i, 1);intercept = true;matrixNode.userData.integrityValue--;if (matrixNode.userData.integrityValue <= 0) {triggerDissipation(matrixNode.position, 0xff0055);hostScene.remove(matrixNode); trackedMatrices.splice(j, 1);metricData += 100;document.getElementById('val-a').innerText = metricData;if (trackedMatrices.length === 0) { currentIteration++; deployMatrices(); }} else {triggerDissipation(node.position, 0xffffff);}break;}}if (!intercept && node.userData.duration <= 0) { hostScene.remove(node); projectionNodes.splice(i, 1); }}}function computeMatrices(dt) {const anchorPoint = primaryNode.position;for (let i = trackedMatrices.length - 1; i >= 0; i--) {const item = trackedMatrices[i];item.children.rotation.y += 2 * dt;const dynamicVector = new THREE.Vector3().subVectors(anchorPoint, item.position);const magnitude = dynamicVector.length();dynamicVector.normalize();item.position.addScaledVector(dynamicVector, item.userData.velocityScalar * dt);item.position.y = 2.0 + Math.sin(systemClock.getElapsedTime() * 4 + item.userData.phaseShift) * 0.4;if (magnitude < 1.6) {structuralIntegrity -= 10;document.getElementById('val-c').innerText = Math.max(0, structuralIntegrity);const flash = document.getElementById('impact-flash');flash.style.opacity = '1'; setTimeout(() => flash.style.opacity = '0', 60);item.position.addScaledVector(dynamicVector, -6.0);if (structuralIntegrity <= 0) restrictRuntime();}}}function computeFX(dt) {if (kickbackDelta > 0) {kickbackDelta -= dt;focalApparatus.position.z = standardRestPosition.z + 0.04;} else {focalApparatus.position.lerp(standardRestPosition, 10 * dt);}for (let i = dissipationArrays.length - 1; i >= 0; i--) {const element = dissipationArrays[i];element.position.addScaledVector(element.userData.momentum, dt);element.userData.momentum.y -= 9.8 * dt;element.userData.lifespan -= dt;if (element.userData.lifespan <= 0) { hostScene.remove(element); dissipationArrays.splice(i, 1); }}}window.onload = buildWorkspace;
