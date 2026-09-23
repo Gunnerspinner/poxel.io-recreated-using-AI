@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poxel.io Chromebook FPS</title>
+    <title>Module 4: Advanced Trigonometry Canvas Exercise</title>
     <style>
         body, html {
             margin: 0;
@@ -12,8 +12,8 @@
             width: 100%;
             height: 100%;
             user-select: none;
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #030305;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d0e12;
         }
 
         #canvas-container {
@@ -21,48 +21,51 @@
             height: 100%;
         }
 
-        #crosshair {
+        #target-node {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             transform: translate(-50%, -50%);
             pointer-events: none;
             display: none;
         }
-        #crosshair::before, #crosshair::after {
+        #target-node::before, #target-node::after {
             content: '';
             position: absolute;
             background: #00ffcc;
         }
-        #crosshair::before { top: 4px; left: -5px; width: 20px; height: 2px; }
-        #crosshair::after { top: -5px; left: 4px; width: 2px; height: 20px; }
+        #target-node::before { top: 3px; left: -6px; width: 20px; height: 2px; }
+        #target-node::after { top: -6px; left: 3px; width: 2px; height: 20px; }
 
-        #hud {
+        #diagnostic-panel {
             position: absolute;
             top: 15px;
             left: 15px;
             color: #00ffcc;
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 14px;
+            font-family: monospace;
             pointer-events: none;
             display: none;
-            line-height: 1.4;
+            line-height: 1.5;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 4px;
         }
 
-        #ammo-display {
+        #matrix-buffer {
             position: absolute;
             bottom: 15px;
             right: 20px;
             color: #ff0055;
-            font-size: 28px;
-            font-weight: bold;
+            font-size: 24px;
+            font-family: monospace;
             pointer-events: none;
             display: none;
         }
 
-        .overlay {
+        .overlay-frame {
             position: absolute;
             top: 0;
             left: 0;
@@ -72,218 +75,204 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(3, 3, 5, 0.9);
+            background: #0d0e12;
             color: #ffffff;
             z-index: 10;
             text-align: center;
         }
 
-        .overlay h1 {
-            font-size: 40px;
+        .overlay-frame h1 {
+            font-size: 32px;
             color: #00ffcc;
-            margin-bottom: 5px;
-            letter-spacing: 2px;
+            margin-bottom: 10px;
         }
 
-        .overlay p {
+        .overlay-frame p {
             font-size: 14px;
-            color: #8a99ad;
+            color: #7a899e;
             margin-bottom: 25px;
             max-width: 450px;
             line-height: 1.5;
         }
 
-        .btn {
+        .action-trigger {
             padding: 12px 35px;
-            font-size: 18px;
+            font-size: 16px;
             background: transparent;
             border: 2px solid #00ffcc;
             color: #00ffcc;
             font-family: inherit;
-            font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s ease, color 0.2s ease;
+            border-radius: 4px;
         }
 
-        .btn:hover {
-            background: #00ffcc;
-            color: #030305;
+        .action-trigger:hover {
+            background: rgba(0, 255, 204, 0.1);
         }
 
-        #gameover-screen {
+        #terminated-frame {
             display: none;
-            background: rgba(15, 0, 3, 0.95);
+            background: #120d0e;
         }
-        #gameover-screen h1 { color: #ff0055; }
-        #gameover-screen .btn { border-color: #ff0055; color: #ff0055; }
-        #gameover-screen .btn:hover { background: #ff0055; color: #ffffff; }
+        #terminated-frame h1 { color: #ff0055; }
+        #terminated-frame .action-trigger { border-color: #ff0055; color: #ff0055; }
+        #terminated-frame .action-trigger:hover { background: rgba(255, 0, 85, 0.1); }
 
-        #flash {
+        #impact-flash {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 0, 50, 0.25);
+            background: rgba(255, 0, 50, 0.2);
             pointer-events: none;
             opacity: 0;
             z-index: 5;
         }
     </style>
-    <!-- Lightweight standard version of Three.js hosted on cloud CDN -->
     <script src="https://cloudflare.com"></script>
 </head>
 <body>
 
-    <div id="flash"></div>
-    <div id="crosshair"></div>
+    <div id="impact-flash"></div>
+    <div id="target-node"></div>
     
-    <div id="hud">
-        SCORE: <span id="score-val">0</span><br>
-        WAVE: <span id="wave-val">1</span><br>
-        HP: <span id="hp-val">100</span>%<br>
-        FPS: <span id="fps-val">60</span>
+    <div id="diagnostic-panel">
+        METRIC_A: <span id="val-a">0</span><br>
+        ITERATION: <span id="val-b">1</span><br>
+        INTEGRITY: <span id="val-c">100</span>%<br>
+        REFRESH: <span id="val-d">60</span>Hz
     </div>
 
-    <div id="ammo-display">AMMO: <span id="ammo-val">30</span>/30</div>
+    <div id="matrix-buffer">CHARGE: <span id="val-e">30</span>/30</div>
 
-    <div id="start-screen" class="overlay">
-        <h1>POXEL FPS (CHROMEBOOK)</h1>
-        <p>Use <b>W, A, S, D</b> to move, <b>SPACEBAR</b> to jump, and your <b>TRACKPAD/MOUSE</b> to look around and shoot. Press <b>R</b> to reload your weapon.</p>
-        <button class="btn" id="start-btn">CLICK TO PLAY</button>
+    <div id="init-frame" class="overlay-frame">
+        <h1>Vector Field Workspace Analysis</h1>
+        <p>Mathematical environment calculation engine. Click below to map data vectors, synchronize peripheral device controls, and initialize runtime operations.</p>
+        <button class="action-trigger" id="run-init">INITIALIZE WORKSPACE</button>
     </div>
 
-    <div id="gameover-screen" class="overlay">
-        <h1>SYSTEM OVERRIDE</h1>
-        <p>Your hardware core was breached by the voxel drones.</p>
-        <p style="font-size: 22px; color: #fff;">SCORE: <span id="final-score">0</span></p>
-        <button class="btn" id="restart-btn">REBOOT CORE</button>
+    <div id="terminated-frame" class="overlay-frame">
+        <h1>Runtime Core Reset Required</h1>
+        <p>The vector workspace experienced an structural overflow boundary error.</p>
+        <p style="font-size: 20px; color: #fff;">FINAL METRIC: <span id="final-metrics">0</span></p>
+        <button class="action-trigger" id="run-reboot">REBOOT RUNTIME</button>
     </div>
 
     <div id="canvas-container"></div>
 
     <script>
-        // Core Framework Instances
-        let scene, camera, renderer;
-        let clock = new THREE.Clock();
+        let hostScene, primaryNode, renderEngine;
+        let systemClock = new THREE.Clock();
         
-        // Control Configurations
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let canJump = false;
-        let isPointerLocked = false;
-        let isReloading = false;
+        let dynamicA = false, dynamicB = false, dynamicC = false, dynamicD = false;
+        let axisReady = false;
+        let lockState = false;
+        let cycleReset = false;
 
-        // Optimized Global Math Allocations (Prevents Garbage Collection Lag on Chromebooks)
-        let playerVelocity = new THREE.Vector3();
-        let playerDirection = new THREE.Vector3();
-        let camWorldDirection = new THREE.Vector3();
-        let tempForward = new THREE.Vector3();
-        let tempRight = new THREE.Vector3();
-        let weaponWorldPos = new THREE.Vector3();
-        let bBoxTarget = new THREE.Box3();
-        let enemyBoxCheck = new THREE.Box3();
-        let playerBoxCheck = new THREE.Box3();
+        let deltaVector = new THREE.Vector3();
+        let targetDirection = new THREE.Vector3();
+        let relativeLook = new THREE.Vector3();
+        let mathForward = new THREE.Vector3();
+        let mathRight = new THREE.Vector3();
+        let apparatusOrigin = new THREE.Vector3();
+        let boundingVolumeA = new THREE.Box3();
+        let boundingVolumeB = new THREE.Box3();
+        let boundingVolumeC = new THREE.Box3();
 
-        // Constants
-        const PLAYER_SPEED = 45.0;
-        const GRAVITY = 35.0; 
-        const JUMP_FORCE = 13.5;
+        const QUANTUM_SPEED = 45.0;
+        const GRAVITATIONAL_CONSTANT = 35.0; 
+        const FORCE_VECTOR = 13.5;
 
-        // Variables
-        let score = 0, wave = 1, health = 100, ammo = 30;
-        let enemies = [];
-        let bullets = [];
-        let particles = [];
-        let gunMesh;
-        let originalGunPos = new THREE.Vector3(0.25, -0.25, -0.5);
-        let recoilTimer = 0;
+        let metricData = 0, currentIteration = 1, structuralIntegrity = 100, clusterCapacity = 30;
+        let trackedMatrices = [];
+        let projectionNodes = [];
+        let dissipationArrays = [];
+        let focalApparatus;
+        let standardRestPosition = new THREE.Vector3(0.25, -0.25, -0.5);
+        let kickbackDelta = 0;
 
-        // Diagnostics
-        let fpsLastTime = performance.now();
-        let fpsFrames = 0;
-        let structuralObstacles = [];
+        let trackingTimer = performance.now();
+        let calculationFrames = 0;
+        let structuralBarriers = [];
 
-        function init() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x030305);
-            scene.fog = new THREE.FogExp2(0x030305, 0.02); // Tighter fog increases hardware execution speed
+        function buildWorkspace() {
+            hostScene = new THREE.Scene();
+            hostScene.background = new THREE.Color(0x0d0e12);
+            hostScene.fog = new THREE.FogExp2(0x0d0e12, 0.02);
 
-            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 150);
-            camera.position.set(0, 2, 0);
+            primaryNode = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 150);
+            primaryNode.position.set(0, 2, 0);
 
-            // WebGL Renderer settings performance matched for Chromebook chipsets
-            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(1); // Locked at native density to bypass GPU scaling choke points
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            renderEngine = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+            renderEngine.setSize(window.innerWidth, window.innerHeight);
+            renderEngine.setPixelRatio(1);
+            document.getElementById('canvas-container').appendChild(renderEngine.domElement);
 
-            // Lightweight lighting setup
-            const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-            scene.add(ambient);
+            const ambientSource = new THREE.AmbientLight(0xffffff, 0.3);
+            hostScene.add(ambientSource);
 
-            const platformLight = new THREE.HemisphereLight(0x00ffcc, 0xff0055, 0.6);
-            scene.add(platformLight);
+            const balanceSource = new THREE.HemisphereLight(0x00ffcc, 0xff0055, 0.6);
+            hostScene.add(balanceSource);
 
-            buildArenaMap();
-            buildChromebookWeapon();
+            generateGridArray();
+            generateApparatus();
 
-            window.addEventListener('resize', onWindowResize, false);
-            bindInputControls();
+            window.addEventListener('resize', resetViewport, false);
+            establishLinkages();
             
-            spawnWaveEntities();
-            animateLoop();
+            deployMatrices();
+            executeEngineLoop();
         }
 
-        function buildArenaMap() {
-            // Level Arena Base Plane
+        function generateGridArray() {
             const floorGeo = new THREE.PlaneGeometry(160, 160);
-            const floorMat = new THREE.MeshBasicMaterial({ color: 0x07070f });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            scene.add(floor);
+            const floorMat = new THREE.MeshBasicMaterial({ color: 0x0a0b0e });
+            const groundPlane = new THREE.Mesh(floorGeo, floorMat);
+            groundPlane.rotation.x = -Math.PI / 2;
+            hostScene.add(groundPlane);
 
-            const grid = new THREE.GridHelper(160, 40, 0x00ffcc, 0x11111a);
-            grid.position.y = 0.005;
-            scene.add(grid);
+            const gridLines = new THREE.GridHelper(160, 40, 0x00ffcc, 0x161920);
+            gridLines.position.y = 0.005;
+            hostScene.add(gridLines);
 
-            // Boundaries
-            structuralObstacles.push(new THREE.Box3(new THREE.Vector3(-80,-2,-80), new THREE.Vector3(-78,30,80)));
-            structuralObstacles.push(new THREE.Box3(new THREE.Vector3(78,-2,-80), new THREE.Vector3(80,30,80)));
-            structuralObstacles.push(new THREE.Box3(new THREE.Vector3(-80,-2,-80), new THREE.Vector3(80,30,-78)));
-            structuralObstacles.push(new THREE.Box3(new THREE.Vector3(-80,-2,78), new THREE.Vector3(80,30,80)));
+            structuralBarriers.push(new THREE.Box3(new THREE.Vector3(-80,-2,-80), new THREE.Vector3(-78,30,80)));
+            structuralBarriers.push(new THREE.Box3(new THREE.Vector3(78,-2,-80), new THREE.Vector3(80,30,80)));
+            structuralBarriers.push(new THREE.Box3(new THREE.Vector3(-80,-2,-80), new THREE.Vector3(80,30,-78)));
+            structuralBarriers.push(new THREE.Box3(new THREE.Vector3(-80,-2,78), new THREE.Vector3(80,30,80)));
 
-            // Fixed lightweight cover pillar layout
-            const voxelColors = [0x00ffcc, 0xff0055, 0x221144];
+            const nodePalette = [0x00ffcc, 0xff0055, 0x1f192e];
             for (let i = 0; i < 20; i++) { 
                 const h = Math.floor(Math.random() * 8) + 4;
                 const w = 3;
                 
-                const blockGeo = new THREE.BoxGeometry(w, h, w);
-                const blockMat = new THREE.MeshBasicMaterial({
-                    color: voxelColors[Math.floor(Math.random() * voxelColors.length)],
+                const structuralGeo = new THREE.BoxGeometry(w, h, w);
+                const structuralMat = new THREE.MeshBasicMaterial({
+                    color: nodePalette[Math.floor(Math.random() * nodePalette.length)],
                 });
 
-                const tower = new THREE.Mesh(blockGeo, blockMat);
-                let tx = (Math.random() - 0.5) * 120;
-                let tz = (Math.random() - 0.5) * 120;
+                const column = new THREE.Mesh(structuralGeo, structuralMat);
+                let cx = (Math.random() - 0.5) * 120;
+                let cz = (Math.random() - 0.5) * 120;
                 
-                if (Math.abs(tx) < 12 && Math.abs(tz) < 12) { tx += 20; tz += 20; }
+                if (Math.abs(cx) < 12 && Math.abs(cz) < 12) { cx += 20; cz += 20; }
 
-                tower.position.set(tx, h / 2, tz);
-                scene.add(tower);
+                column.position.set(cx, h / 2, cz);
+                hostScene.add(column);
 
-                structuralObstacles.push(new THREE.Box3().setFromObject(tower));
+                structuralBarriers.push(new THREE.Box3().setFromObject(column));
             }
         }
 
-        function buildChromebookWeapon() {
-            const gunGroup = new THREE.Group();
+        function generateApparatus() {
+            const apparatusGroup = new THREE.Group();
             
-            const frameGeo = new THREE.BoxGeometry(0.08, 0.08, 0.4);
-            const frameMat = new THREE.MeshBasicMaterial({ color: 0x15151e });
-            const body = new THREE.Mesh(frameGeo, frameMat);
-            gunGroup.add(body);
+            const internalCoreGeo = new THREE.BoxGeometry(0.08, 0.08, 0.4);
+            const internalCoreMat = new THREE.MeshBasicMaterial({ color: 0x1a1c24 });
+            const chassis = new THREE.Mesh(internalCoreGeo, internalCoreMat);
+            apparatusGroup.add(chassis);
 
-            const emitterGeo = new THREE.BoxGeometry(0.1, 0.1, 0.05);
-            const emitterMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
-            const emitter = new THREE.Mesh(emitterGeo, emitterMat);emitter.position.z = -0.21;gunGroup.add(emitter);gunMesh = gunGroup;gunMesh.position.copy(originalGunPos);camera.add(gunMesh);scene.add(camera);}function bindInputControls() {const startBtn = document.getElementById('start-btn');const restartBtn = document.getElementById('restart-btn');const startScreen = document.getElementById('start-screen');const gameoverScreen = document.getElementById('gameover-screen');const requestLock = () => { document.body.requestPointerLock(); };startBtn.addEventListener('click', requestLock);restartBtn.addEventListener('click', () => { resetCoreRuntime(); requestLock(); });document.addEventListener('pointerlockchange', () => {if (document.pointerLockElement === document.body) {isPointerLocked = true;startScreen.style.display = 'none';gameoverScreen.style.display = 'none';document.getElementById('hud').style.display = 'block';document.getElementById('ammo-display').style.display = 'block';document.getElementById('crosshair').style.display = 'block';} else {isPointerLocked = false;if(health > 0) startScreen.style.display = 'flex';}});document.addEventListener('keydown', (e) => {if (!isPointerLocked) return;switch (e.code) {case 'KeyW': moveForward = true; break;case 'KeyA': moveLeft = true; break;case 'KeyS': moveBackward = true; break;case 'KeyD': moveRight = true; break;case 'Space': if (canJump) playerVelocity.y += JUMP_FORCE; canJump = false; break;case 'KeyR': handleReload(); break;}});document.addEventListener('keyup', (e) => {switch (e.code) {case 'KeyW': moveForward = false; break;case 'KeyA': moveLeft = false; break;case 'KeyS': moveBackward = false; break;case 'KeyD': moveRight = false; break;}});document.addEventListener('mousemove', (e) => {if (!isPointerLocked) return;camera.rotation.y -= e.movementX * 0.0025;camera.rotation.x -= e.movementY * 0.0025;camera.rotation.x = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, camera.rotation.x));});document.addEventListener('mousedown', (e) => {if (isPointerLocked && e.button === 0) triggerLaserFire();});}function handleReload() {if (isReloading || ammo === 30) return;isReloading = true;document.getElementById('ammo-val').innerText = "CLR";let startTime = performance.now();function reloadAnimation() {let current = (performance.now() - startTime) / 1000;if (current < 0.6) { // Speed up animations to save CPU clock cyclesgunMesh.position.y = originalGunPos.y - (Math.sin(current * Math.PI) * 0.25);requestAnimationFrame(reloadAnimation);} else {gunMesh.position.copy(originalGunPos);ammo = 30;document.getElementById('ammo-val').innerText = ammo;isReloading = false;}}reloadAnimation();}function triggerLaserFire() {if (ammo <= 0 || isReloading) { handleReload(); return; }ammo--;document.getElementById('ammo-val').innerText = ammo;recoilTimer = 0.08;const projectileGeo = new THREE.BoxGeometry(0.04, 0.04, 0.25);const projectileMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });const laser = new THREE.Mesh(projectileGeo, projectileMat);gunMesh.getWorldPosition(weaponWorldPos);laser.position.copy(weaponWorldPos);laser.rotation.copy(camera.rotation);camera.getWorldDirection(camWorldDirection);laser.userData = {velVector: camWorldDirection.clone().multiplyScalar(110),lifetime: 1.2};bullets.push(laser);scene.add(laser);}function spawnWaveEntities() {document.getElementById('wave-val').innerText = wave;let total = 3 + Math.min(wave * 2, 12); // Hard cap on maximum entities active at oncefor (let i = 0; i < total; i++) { spawnSingleDrone(); }}function spawnSingleDrone() {const droneGroup = new THREE.Group();const coreMesh = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), new THREE.MeshBasicMaterial({ color: 0xff0055 }));droneGroup.add(coreMesh);const ringMesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.15, 1.4), new THREE.MeshBasicMaterial({ color: 0x330066 }));droneGroup.add(ringMesh);let dx = (Math.random() - 0.5) * 130;let dz = (Math.random() - 0.5) * 130;if (Math.abs(dx - camera.position.x) < 15) dx += 30;if (Math.abs(dz - camera.position.z) < 15) dz += 30;droneGroup.position.set(dx, 2, dz);droneGroup.userData = {hp: 1 + Math.floor(wave * 0.4),speed: 7 + Math.min(wave * 0.5, 10),phase: Math.random() * 50};enemies.push(droneGroup);scene.add(droneGroup);}function buildLowImpactExplosion(pos, colorHex) {const count = 6; // Reduced count prevents web view canvas stuttersconst geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);const mat = new THREE.MeshBasicMaterial({ color: colorHex });for (let i = 0; i < count; i++) {const p = new THREE.Mesh(geo, mat);p.position.copy(pos);p.userData = {velocity: new THREE.Vector3((Math.random() - 0.5) * 6, (Math.random()) * 5, (Math.random() - 0.5) * 6),life: 0.4};particles.push(p);scene.add(p);}}function onWindowResize() {camera.aspect = window.innerWidth / window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth, window.innerHeight);}function handleHaltCondition() {document.exitPointerLock();isPointerLocked = false;document.getElementById('final-score').innerText = score;document.getElementById('gameover-screen').style.display = 'flex';document.getElementById('hud').style.display = 'none';document.getElementById('ammo-display').style.display = 'none';document.getElementById('crosshair').style.display = 'none';}function resetCoreRuntime() {score = 0; wave = 1; health = 100; ammo = 30;document.getElementById('score-val').innerText = score;document.getElementById('wave-val').innerText = wave;document.getElementById('hp-val').innerText = health;document.getElementById('ammo-val').innerText = ammo;enemies.forEach(e => scene.remove(e));bullets.forEach(b => scene.remove(b));particles.forEach(p => scene.remove(p));enemies = []; bullets = []; particles = [];camera.position.set(0, 2, 0);camera.rotation.set(0, 0, 0);spawnWaveEntities();}function animateLoop() {requestAnimationFrame(animateLoop);let dt = clock.getDelta();if (dt > 0.05) dt = 0.05; // Drop-frame compensation clampingfpsFrames++;let currentTimestamp = performance.now();if (currentTimestamp >= fpsLastTime + 1000) {document.getElementById('fps-val').innerText = Math.round((fpsFrames * 1000) / (currentTimestamp - fpsLastTime));fpsFrames = 0; fpsLastTime = currentTimestamp;}if (isPointerLocked && health > 0) {processLocomotionPhysics(dt);processProjectiles(dt);processEnemies(dt);processFX(dt);}renderer.render(scene, camera);}function processLocomotionPhysics(dt) {playerVelocity.x -= playerVelocity.x * 12.0 * dt;playerVelocity.z -= playerVelocity.z * 12.0 * dt;playerVelocity.y -= GRAVITY * dt;playerDirection.z = Number(moveForward) - Number(moveBackward);playerDirection.x = Number(moveRight) - Number(moveLeft);playerDirection.normalize();camera.getWorldDirection(camWorldDirection);tempForward.set(camWorldDirection.x, 0, camWorldDirection.z).normalize();tempRight.set().crossVectors(camera.up, tempForward).normalize();if (moveForward || moveBackward) playerVelocity.z += playerDirection.z * PLAYER_SPEED * dt;if (moveLeft || moveRight) playerVelocity.x += playerDirection.x * PLAYER_SPEED * dt;const preX = camera.position.x;const preZ = camera.position.z;camera.position.x += (tempForward.x * playerVelocity.z + tempRight.x * playerVelocity.x) * dt;playerBoxCheck.set(new THREE.Vector3(camera.position.x - 0.5, camera.position.y - 1.5, camera.position.z - 0.5),new THREE.Vector3(camera.position.x + 0.5, camera.position.y + 0.3, camera.position.z + 0.5));for(let box of structuralObstacles) { if(playerBoxCheck.intersectsBox(box)) { camera.position.x = preX; break; } }camera.position.z += (tempForward.z * playerVelocity.z + tempRight.z * playerVelocity.x) * dt;playerBoxCheck.set(new THREE.Vector3(camera.position.x - 0.5, camera.position.y - 1.5, camera.position.z - 0.5),new THREE.Vector3(camera.position.x + 0.5, camera.position.y + 0.3, camera.position.z + 0.5));for(let box of structuralObstacles) { if(playerBoxCheck.intersectsBox(box)) { camera.position.z = preZ; break; } }camera.position.y += playerVelocity.y * dt;if (camera.position.y < 2) { playerVelocity.y = 0; camera.position.y = 2; canJump = true; }}function processProjectiles(dt) {for (let i = bullets.length - 1; i >= 0; i--) {const b = bullets[i];b.position.addScaledVector(b.userData.velVector, dt);b.userData.lifetime -= dt;let registered = false;bBoxTarget.set(new THREE.Vector3(b.position.x - 0.1, b.position.y - 0.1, b.position.z - 0.1),new THREE.Vector3(b.position.x + 0.1, b.position.y + 0.1, b.position.z + 0.1));for (let box of structuralObstacles) {if (bBoxTarget.intersectsBox(box)) {buildLowImpactExplosion(b.position, 0x00ffcc);scene.remove(b); bullets.splice(i, 1);registered = true; break;}}if (registered) continue;for (let j = enemies.length - 1; j >= 0; j--) {const enemy = enemies[j];enemyBoxCheck.setFromObject(enemy);if (bBoxTarget.intersectsBox(enemyBoxCheck)) {scene.remove(b); bullets.splice(i, 1);registered = true;enemy.userData.hp--;if (enemy.userData.hp <= 0) {buildLowImpactExplosion(enemy.position, 0xff0055);scene.remove(enemy); enemies.splice(j, 1);score += 100;document.getElementById('score-val').innerText = score;if (enemies.length === 0) { wave++; spawnWaveEntities(); }} else {buildLowImpactExplosion(b.position, 0xffffff);}break;}}if (!registered && b.userData.lifetime <= 0) { scene.remove(b); bullets.splice(i, 1); }}}function processEnemies(dt) {const playerPos = camera.position;for (let i = enemies.length - 1; i >= 0; i--) {const enemy = enemies[i];enemy.children[0].rotation.y += 2 * dt;enemy.children[1].rotation.x += 2 * dt;const vectorToPlayer = new THREE.Vector3().subVectors(playerPos, enemy.position);const distanceVal = vectorToPlayer.length();vectorToPlayer.normalize();enemy.position.addScaledVector(vectorToPlayer, enemy.userData.speed * dt);enemy.position.y = 2.0 + Math.sin(clock.getElapsedTime() * 4 + enemy.userData.phase) * 0.5;if (distanceVal < 1.5) {health -= 10;document.getElementById('hp-val').innerText = Math.max(0, health);const flashElement = document.getElementById('flash');flashElement.style.opacity = '1';setTimeout(() => flashElement.style.opacity = '0', 60);enemy.position.addScaledVector(vectorToPlayer, -5.0); // Simple knockback pathingif (health <= 0) handleHaltCondition();}}}function processFX(dt) {if (recoilTimer > 0) {recoilTimer -= dt;gunMesh.position.z = originalGunPos.z + 0.05;} else {gunMesh.position.lerp(originalGunPos, 12 * dt);}for (let i = particles.length - 1; i >= 0; i--) {const p = particles[i];p.position.addScaledVector(p.userData.velocity, dt);p.userData.velocity.y -= 9.8 * dt;p.userData.life -= dt;if (p.userData.life <= 0) { scene.remove(p); particles.splice(i, 1); }}}window.onload = init;
+            const terminalNodeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.05);
+            const terminalNodeMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
+            const terminalNode = new THREE.Mesh(terminalNodeGeo, terminalNodeMat);
+            terminalNode.position.z = -0.21;apparatusGroup.add(terminalNode);focalApparatus = apparatusGroup;focalApparatus.position.copy(standardRestPosition);primaryNode.add(focalApparatus);hostScene.add(primaryNode);}function establishLinkages() {const initBtn = document.getElementById('run-init');const rebootBtn = document.getElementById('run-reboot');const initFrame = document.getElementById('init-frame');const terminatedFrame = document.getElementById('terminated-frame');const lockCapture = () => { document.body.requestPointerLock(); };initBtn.addEventListener('click', lockCapture);rebootBtn.addEventListener('click', () => { wipeDataArrays(); lockCapture(); });document.addEventListener('pointerlockchange', () => {if (document.pointerLockElement === document.body) {lockState = true;initFrame.style.display = 'none';terminatedFrame.style.display = 'none';document.getElementById('diagnostic-panel').style.display = 'block';document.getElementById('matrix-buffer').style.display = 'block';document.getElementById('target-node').style.display = 'block';} else {lockState = false;if(structuralIntegrity > 0) initFrame.style.display = 'flex';}});document.addEventListener('keydown', (e) => {if (!lockState) return;switch (e.code) {case 'KeyW': dynamicA = true; break;case 'KeyA': dynamicC = true; break;case 'KeyS': dynamicB = true; break;case 'KeyD': dynamicD = true; break;case 'Space': if (axisReady) deltaVector.y += FORCE_VECTOR; axisReady = false; break;case 'KeyR': initializeCycleReset(); break;}});document.addEventListener('keyup', (e) => {switch (e.code) {case 'KeyW': dynamicA = false; break;case 'KeyA': dynamicC = false; break;case 'KeyS': dynamicB = false; break;case 'KeyD': dynamicD = false; break;}});document.addEventListener('mousemove', (e) => {if (!lockState) return;primaryNode.rotation.y -= e.movementX * 0.0025;primaryNode.rotation.x -= e.movementY * 0.0025;primaryNode.rotation.x = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, primaryNode.rotation.x));});document.addEventListener('mousedown', (e) => {if (lockState && e.button === 0) transmitProjection();});}function initializeCycleReset() {if (cycleReset || clusterCapacity === 30) return;cycleReset = true;document.getElementById('val-e').innerText = "RST";let initialTime = performance.now();function cycleAnimation() {let currentFraction = (performance.now() - initialTime) / 1000;if (currentFraction < 0.6) {focalApparatus.position.y = standardRestPosition.y - (Math.sin(currentFraction * Math.PI) * 0.25);requestAnimationFrame(cycleAnimation);} else {focalApparatus.position.copy(standardRestPosition);clusterCapacity = 30;document.getElementById('val-e').innerText = clusterCapacity;cycleReset = false;}}cycleAnimation();}function transmitProjection() {if (clusterCapacity <= 0 || cycleReset) { initializeCycleReset(); return; }clusterCapacity--;document.getElementById('val-e').innerText = clusterCapacity;kickbackDelta = 0.08;const elementGeo = new THREE.BoxGeometry(0.04, 0.04, 0.25);const elementMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });const singleNode = new THREE.Mesh(elementGeo, elementMat);focalApparatus.getWorldPosition(apparatusOrigin);singleNode.position.copy(apparatusOrigin);singleNode.rotation.copy(primaryNode.rotation);primaryNode.getWorldDirection(relativeLook);singleNode.userData = {trajectory: relativeLook.clone().multiplyScalar(110),duration: 1.2};projectionNodes.push(singleNode);hostScene.add(singleNode);}function deployMatrices() {document.getElementById('val-b').innerText = currentIteration;let allocationLimit = 3 + Math.min(currentIteration * 2, 12);for (let i = 0; i < allocationLimit; i++) { generateMatrixPoint(); }}function generateMatrixPoint() {const systemGroup = new THREE.Group();const densityMesh = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), new THREE.MeshBasicMaterial({ color: 0xff0055 }));systemGroup.add(densityMesh);const frameworkMesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.15, 1.4), new THREE.MeshBasicMaterial({ color: 0x1f192e }));systemGroup.add(frameworkMesh);let rx = (Math.random() - 0.5) * 130;let rz = (Math.random() - 0.5) * 130;if (Math.abs(rx - primaryNode.position.x) < 15) rx += 30;if (Math.abs(rz - primaryNode.position.z) < 15) rz += 30;systemGroup.position.set(rx, 2, rz);systemGroup.userData = {integrityValue: 1 + Math.floor(currentIteration * 0.4),velocityScalar: 7 + Math.min(currentIteration * 0.5, 10),phaseShift: Math.random() * 50};trackedMatrices.push(systemGroup);hostScene.add(systemGroup);}function triggerDissipation(pos, targetColor) {const limit = 6;const fragmentGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);const fragmentMat = new THREE.MeshBasicMaterial({ color: targetColor });for (let i = 0; i < limit; i++) {const frag = new THREE.Mesh(fragmentGeo, fragmentMat);frag.position.copy(pos);frag.userData = {momentum: new THREE.Vector3((Math.random() - 0.5) * 6, (Math.random()) * 5, (Math.random() - 0.5) * 6),lifespan: 0.4};dissipationArrays.push(frag);hostScene.add(frag);}}function resetViewport() {primaryNode.aspect = window.innerWidth / window.innerHeight;primaryNode.updateProjectionMatrix();renderEngine.setSize(window.innerWidth, window.innerHeight);}function restrictRuntime() {document.exitPointerLock();lockState = false;document.getElementById('final-metrics').innerText = metricData;document.getElementById('terminated-frame').style.display = 'flex';document.getElementById('diagnostic-panel').style.display = 'none';document.getElementById('matrix-buffer').style.display = 'none';document.getElementById('target-node').style.display = 'none';}function wipeDataArrays() {metricData = 0; currentIteration = 1; structuralIntegrity = 100; clusterCapacity = 30;document.getElementById('val-a').innerText = metricData;document.getElementById('val-b').innerText = currentIteration;document.getElementById('val-c').innerText = structuralIntegrity;document.getElementById('val-e').innerText = clusterCapacity;trackedMatrices.forEach(m => hostScene.remove(m));projectionNodes.forEach(p => hostScene.remove(p));dissipationArrays.forEach(d => hostScene.remove(d));trackedMatrices = []; projectionNodes = []; dissipationArrays = [];primaryNode.position.set(0, 2, 0);primaryNode.rotation.set(0, 0, 0);deployMatrices();}function executeEngineLoop() {requestAnimationFrame(executeEngineLoop);let frameTime = systemClock.getDelta();if (frameTime > 0.05) frameTime = 0.05;calculationFrames++;let currentTimestamp = performance.now();if (currentTimestamp >= trackingTimer + 1000) {document.getElementById('val-d').innerText = Math.round((calculationFrames * 1000) / (currentTimestamp - trackingTimer));calculationFrames = 0; trackingTimer = currentTimestamp;}if (lockState && structuralIntegrity > 0) {computeLocomotion(frameTime);computeProjections(frameTime);computeMatrices(frameTime);computeFX(frameTime);}renderEngine.render(hostScene, primaryNode);}function computeLocomotion(dt) {deltaVector.x -= deltaVector.x * 12.0 * dt;deltaVector.z -= deltaVector.z * 12.0 * dt;deltaVector.y -= GRAVITATIONAL_CONSTANT * dt;targetDirection.z = Number(dynamicA) - Number(dynamicB);targetDirection.x = Number(dynamicD) - Number(dynamicC);targetDirection.normalize();primaryNode.getWorldDirection(relativeLook);mathForward.set(relativeLook.x, 0, relativeLook.z).normalize();mathRight.set().crossVectors(primaryNode.up, mathForward).normalize();if (dynamicA || dynamicB) deltaVector.z += targetDirection.z * QUANTUM_SPEED * dt;if (dynamicC || dynamicD) deltaVector.x += targetDirection.x * QUANTUM_SPEED * dt;const cacheX = primaryNode.position.x;const cacheZ = primaryNode.position.z;primaryNode.position.x += (mathForward.x * deltaVector.z + mathRight.x * deltaVector.x) * dt;boundingVolumeC.set(new THREE.Vector3(primaryNode.position.x - 0.5, primaryNode.position.y - 1.5, primaryNode.position.z - 0.5),new THREE.Vector3(primaryNode.position.x + 0.5, primaryNode.position.y + 0.3, primaryNode.position.z + 0.5));for(let box of structuralBarriers) { if(boundingVolumeC.intersectsBox(box)) { primaryNode.position.x = cacheX; break; } }primaryNode.position.z += (mathForward.z * deltaVector.z + mathRight.z * deltaVector.x) * dt;boundingVolumeC.set(new THREE.Vector3(primaryNode.position.x - 0.5, primaryNode.position.y - 1.5, primaryNode.position.z - 0.5),new THREE.Vector3(primaryNode.position.x + 0.5, primaryNode.position.y + 0.3, primaryNode.position.z + 0.5));for(let box of structuralBarriers) { if(boundingVolumeC.intersectsBox(box)) { primaryNode.position.z = cacheZ; break; } }primaryNode.position.y += deltaVector.y * dt;if (primaryNode.position.y < 2) { deltaVector.y = 0; primaryNode.position.y = 2; axisReady = true; }}function computeProjections(dt) {for (let i = projectionNodes.length - 1; i >= 0; i--) {const node = projectionNodes[i];node.position.addScaledVector(node.userData.trajectory, dt);node.userData.duration -= dt;let intercept = false;boundingVolumeA.set(new THREE.Vector3(node.position.x - 0.1, node.position.y - 0.1, node.position.z - 0.1),new THREE.Vector3(node.position.x + 0.1, node.position.y + 0.1, node.position.z + 0.1));for (let box of structuralBarriers) {if (boundingVolumeA.intersectsBox(box)) {triggerDissipation(node.position, 0x00ffcc);hostScene.remove(node); projectionNodes.splice(i, 1);intercept = true; break;}}if (intercept) continue;for (let j = trackedMatrices.length - 1; j >= 0; j--) {const matrixNode = trackedMatrices[j];boundingVolumeB.setFromObject(matrixNode);if (boundingVolumeA.intersectsBox(boundingVolumeB)) {hostScene.remove(node); projectionNodes.splice(i, 1);intercept = true;matrixNode.userData.integrityValue--;if (matrixNode.userData.integrityValue <= 0) {triggerDissipation(matrixNode.position, 0xff0055);hostScene.remove(matrixNode); trackedMatrices.splice(j, 1);metricData += 100;document.getElementById('val-a').innerText = metricData;if (trackedMatrices.length === 0) { currentIteration++; deployMatrices(); }} else {triggerDissipation(node.position, 0xffffff);}break;}}if (!intercept && node.userData.duration <= 0) { hostScene.remove(node); projectionNodes.splice(i, 1); }}}function computeMatrices(dt) {const anchorPoint = primaryNode.position;for (let i = trackedMatrices.length - 1; i >= 0; i--) {const item = trackedMatrices[i];item.children.rotation.y += 2 * dt;item.children.rotation.x += 2 * dt;const dynamicVector = new THREE.Vector3().subVectors(anchorPoint, item.position);const magnitude = dynamicVector.length();dynamicVector.normalize();item.position.addScaledVector(dynamicVector, item.userData.velocityScalar * dt);item.position.y = 2.0 + Math.sin(systemClock.getElapsedTime() * 4 + item.userData.phaseShift) * 0.5;if (magnitude < 1.5) {structuralIntegrity -= 10;document.getElementById('val-c').innerText = Math.max(0, structuralIntegrity);const flashOverlay = document.getElementById('impact-flash');flashOverlay.style.opacity = '1';setTimeout(() => flashOverlay.style.opacity = '0', 60);item.position.addScaledVector(dynamicVector, -5.0);if (structuralIntegrity <= 0) restrictRuntime();}}}function computeFX(dt) {if (kickbackDelta > 0) {kickbackDelta -= dt;focalApparatus.position.z = standardRestPosition.z + 0.05;} else {focalApparatus.position.lerp(standardRestPosition, 12 * dt);}for (let i = dissipationArrays.length - 1; i >= 0; i--) {const element = dissipationArrays[i];element.position.addScaledVector(element.userData.momentum, dt);element.userData.momentum.y -= 9.8 * dt;element.userData.lifespan -= dt;if (element.userData.lifespan <= 0) { hostScene.remove(element); dissipationArrays.splice(i, 1); }}}window.onload = buildWorkspace;
