@@ -1,163 +1,189 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poxel.io Clone - Retro FPS</title>
+    <title>Poxel.io Arena - Retro Cyber FPS</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; font-family: 'Courier New', monospace; user-select: none; background: #000; }
-        #canvas-container { width: 100%; height: 100%; display: block; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%, -50%); pointer-events: none; }
-        #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #00ffcc; }
-        #crosshair::before { top: 4px; left: -5px; width: 20px; height: 2px; }
-        #crosshair::after { top: -5px; left: 4px; width: 2px; height: 20px; }
-        #ui-layer { position: absolute; top: 20px; left: 20px; color: #00ffcc; font-size: 18px; text-shadow: 2px 2px #000; pointer-events: none; }
-        #instructions { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; text-align: center; background: rgba(0,0,0,0.85); padding: 30px; border: 3px solid #00ffcc; border-radius: 10px; cursor: pointer; }
-        #instructions h1 { margin-top: 0; color: #00ffcc; }
-        .stat-box { margin-bottom: 5px; background: rgba(0,0,0,0.5); padding: 5px 10px; border-left: 3px solid #00ffcc; }
+        body, html { margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; font-family: 'Segoe UI', -apple-system, sans-serif; user-select: none; background: #0a0a16; color: #fff; }
+        #canvas-container { width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* Modern Cyberpunk HUD */
+        #ui-layer { position: absolute; top: 25px; left: 25px; pointer-events: none; z-index: 10; display: flex; flex-direction: column; gap: 12px; }
+        .stat-card { background: rgba(10, 10, 26, 0.8); border: 1px solid rgba(0, 255, 204, 0.3); padding: 12px 20px; border-radius: 8px; display: flex; flex-direction: column; min-width: 180px; }
+        .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #8892b0; font-weight: 600; }
+        .stat-value { font-size: 24px; font-weight: 700; font-family: monospace; color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.5); }
+        
+        /* Gun Dock Selector */
+        #weapon-dock { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; pointer-events: none; z-index: 10; background: rgba(5, 5, 15, 0.85); padding: 8px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .weapon-slot { padding: 10px 18px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: #555; font-size: 13px; font-weight: 600; text-transform: uppercase; }
+        .weapon-slot.active { background: rgba(0, 255, 204, 0.15); border: 1px solid #00ffcc; color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); }
+
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; border-radius: 50%; background: #00ffcc; box-shadow: 0 0 8px #00ffcc; }
+        
+        /* Launcher Menu Card Overlay */
+        #instructions { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; text-align: center; background: rgba(10, 10, 20, 0.9); padding: 45px; border: 1px solid rgba(0, 255, 204, 0.4); border-radius: 16px; z-index: 999; min-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        #instructions h1 { margin-top: 0; font-size: 28px; color: #00ffcc; letter-spacing: 3px; }
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin: 20px 0; font-size: 13px; }
+        .controls-grid div:nth-child(odd) { color: #00ffcc; font-family: monospace; font-weight: bold; }
+        .btn { background: #00ffcc; color: #000; border: none; padding: 14px 35px; font-size: 14px; font-weight: 700; text-transform: uppercase; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn:hover { background: #fff; }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cloudflare.com"></script>
 </head>
 <body>
+
     <div id="canvas-container"></div>
     <div id="crosshair"></div>
+    
     <div id="ui-layer">
-        <div class="stat-box">KILLS: <span id="kill-count">0</span></div>
-        <div class="stat-box">SPEED: <span id="speed-meter">0</span> u/s</div>
-        <div class="stat-box" style="border-left-color: #ff3366;">HEALTH: 100</div>
+        <div class="stat-card" style="border-left: 4px solid #00ffcc;">
+            <span class="stat-label">Score Metrics</span>
+            <span class="stat-value" id="kill-count">00</span>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #ff3366;">
+            <span class="stat-label">Vital Integrity</span>
+            <span class="stat-value" id="health-meter" style="color: #ff3366;">100</span>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #a832ff;">
+            <span class="stat-label">Velocity Engine</span>
+            <span class="stat-value" id="speed-meter" style="color: #a832ff;">0</span>
+        </div>
     </div>
+
+    <div id="weapon-dock">
+        <div class="weapon-slot active" id="slot-1">Rifle</div>
+        <div class="weapon-slot" id="slot-2">Shotgun</div>
+        <div class="weapon-slot" id="slot-3">Sniper</div>
+        <div class="weapon-slot" id="slot-4">Plasma</div>
+    </div>
+
     <div id="instructions">
-        <h1>POXEL.IO ECO-CLONE</h1>
-        <p>CLICK TO PLAY</p>
-        <p style="font-size: 14px; color: #aaa;">WASD = Move | SPACE = Jump / B-Hop<br>SHIFT = Slide Tech | CLICK = Shoot</p>
+        <h1 id="menu-title">POXEL.IO ARENA</h1>
+        <p id="menu-sub">Click interface card to initialize neural combat link.</p>
+        <div class="controls-grid">
+            <div>[W][A][S][D]</div><div>Directional Locomotion</div>
+            <div>[SPACEBAR]</div><div>Bunny-Hop / Jump</div>
+            <div>[LEFT SHIFT]</div><div>Sliding Momentum Tech</div>
+            <div>[KEYS 1 - 4]</div><div>Arsenal Weapon Swapping</div>
+        </div>
+        <button class="btn" id="play-btn">Initialize Link</button>
     </div>
+
     <script>
         let scene, camera, renderer, clock;
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isGrounded = true, isSliding = false;
-        const velocity = new THREE.Vector3(), direction = new THREE.Vector3();
-        let speedMultiplier = 1.0, bHopTimer = 0, score = 0, isLocked = false;
-        const instructions = document.getElementById('instructions'), speedMeter = document.getElementById('speed-meter'), killCount = document.getElementById('kill-count');
-        const pitchObject = new THREE.Object3D(), yawObject = new THREE.Object3D();
-        const targets = [], activeTracers = [];
-        init(); animate();
+        
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let speedMultiplier = 1.0;
+        let bHopTimer = 0;
+        
+        let playerScore = 0;
+        let playerHealth = 100;
+        let isGameOver = false;
+
+        const instructions = document.getElementById('instructions');
+        const playBtn = document.getElementById('play-btn');
+        const menuTitle = document.getElementById('menu-title');
+        const menuSub = document.getElementById('menu-sub');
+        let isLocked = false;
+
+        const pitchObject = new THREE.Object3D();
+        const yawObject = new THREE.Object3D();
+
+        const enemies = [];
+        const activeTracers = [];
+        const obstacles = [];
+
+        const ARSENAL = {
+            1: { name: "Assault Rifle", damage: 30, spread: 0.02, pellets: 1, range: 130, fireRate: 110, recoil: 0.015, color: 0x00ffcc },
+            2: { name: "Shotgun",       damage: 18, spread: 0.09, pellets: 9, range: 45,  fireRate: 650, recoil: 0.065, color: 0xffaa00 },
+            3: { name: "Sniper Rifle",  damage: 100, spread: 0.00, pellets: 1, range: 300, fireRate: 950, recoil: 0.090, color: 0x3399ff },
+            4: { name: "Plasma Cannon", damage: 60, spread: 0.04, pellets: 2, range: 90,  fireRate: 350, recoil: 0.035, color: 0xa832ff }
+        };
+        let currentWeapon = ARSENAL[1];
+        let lastFireTime = 0;
+
+        init();
+        animate();
+
         function init() {
-            scene = new THREE.Scene(); scene.background = new THREE.Color(0x1a1a2e); scene.fog = new THREE.FogExp2(0x1a1a2e, 0.015);
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x06060c);
+            scene.fog = new THREE.FogExp2(0x06060c, 0.018);
+
             clock = new THREE.Clock();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            pitchObject.add(camera); yawObject.position.y = 2; yawObject.add(pitchObject); scene.add(yawObject);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-            const dirLight = new THREE.DirectionalLight(0x00ffcc, 0.8); dirLight.position.set(20, 40, 20); scene.add(dirLight);
-            const rendererContainer = document.getElementById('canvas-container');
-            renderer = new THREE.WebGLRenderer({ antialias: false }); renderer.setSize(window.innerWidth, window.innerHeight);
-            rendererContainer.appendChild(renderer.domElement);
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 50, 50), new THREE.MeshStandardMaterial({ color: 0x111122, wireframe: true }));
-            floor.rotation.x = -Math.PI / 2; scene.add(floor);
-            const boxGeo = new THREE.BoxGeometry(4, 12, 4), boxMat = new THREE.MeshStandardMaterial({ color: 0x334466, roughness: 0.8 });
+            
+            pitchObject.add(camera);
+            yawObject.position.set(0, 2, 0);
+            yawObject.add(pitchObject);
+            scene.add(yawObject);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+            const sunLight = new THREE.DirectionalLight(0x00ffcc, 0.65);
+            sunLight.position.set(40, 60, 20);
+            scene.add(sunLight);
+
+            const container = document.getElementById('canvas-container');
+            renderer = new THREE.WebGLRenderer({ antialias: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(400, 400, 80, 80), new THREE.MeshStandardMaterial({ color: 0x111122, wireframe: true }));
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
+
+            const towerGeo = new THREE.BoxGeometry(6, 16, 6);
+            const towerMat = new THREE.MeshStandardMaterial({ color: 0x181a26, roughness: 0.65 });
             for(let i = 0; i < 40; i++) {
-                const obstacle = new THREE.Mesh(boxGeo, boxMat);
-                obstacle.position.set((Math.random() - 0.5) * 160, 6, (Math.random() - 0.5) * 160);
-                scene.add(obstacle);
+                const tower = new THREE.Mesh(towerGeo, towerMat);
+                tower.position.set((Math.random() - 0.5) * 220, 8, (Math.random() - 0.5) * 220);
+                scene.add(tower);
+                obstacles.push(tower);
             }
-            for(let i = 0; i < 8; i++) spawnTarget();
-            setupControls(); window.addEventListener('resize', onWindowResize);
+
+            for(let i = 0; i < 5; i++) spawnEnemy();
+
+            bindEventControls();
+            window.addEventListener('resize', onWindowResize);
         }
-        function setupControls() {
-            instructions.addEventListener('click', () => { document.body.requestPointerLock(); });
+
+        function bindEventControls() {
+            const unlockSystem = () => {
+                if(isGameOver) { restartSimulation(); return; }
+                document.body.requestPointerLock();
+            };
+            
+            playBtn.addEventListener('click', unlockSystem);
+            instructions.addEventListener('click', unlockSystem);
+
             document.addEventListener('pointerlockchange', () => {
-                if (document.pointerLockElement === document.body) { instructions.style.display = 'none'; isLocked = true; }
-                else { instructions.style.display = 'block'; isLocked = false; }
+                if (document.pointerLockElement === document.body) {
+                    instructions.style.display = 'none';
+                    isLocked = true;
+                } else {
+                    if(!isGameOver) {
+                        menuTitle.innerText = "SIMULATION PAUSED";
+                        menuSub.innerText = "Neural link standby. Click window to resume.";
+                        playBtn.innerText = "Re-establish Link";
+                    }
+                    instructions.style.display = 'block';
+                    isLocked = false;
+                }
             });
+
             document.addEventListener('mousemove', (e) => {
                 if (!isLocked) return;
-                yawObject.rotation.y -= e.movementX * 0.0022; pitchObject.rotation.x -= e.movementY * 0.0022;
+                yawObject.rotation.y -= e.movementX * 0.0022;
+                pitchObject.rotation.x -= e.movementY * 0.0022;
                 pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchObject.rotation.x));
             });
+
             document.addEventListener('keydown', (e) => {
+                if (!isLocked) return;
                 switch (e.code) {
                     case 'KeyW': moveForward = true; break;
                     case 'KeyS': moveBackward = true; break;
-                    case 'KeyA': moveLeft = true; break;
-                    case 'KeyD': moveRight = true; break;
-                    case 'Space': 
-                        if (isGrounded) {
-                            let jumpBoost = (performance.now() - bHopTimer < 300) ? 1.3 : 1.0;
-                            velocity.y = 12; velocity.x *= jumpBoost; velocity.z *= jumpBoost; isGrounded = false;
-                        }
-                        break;
-                    case 'ShiftLeft':
-                        if(!isSliding && isGrounded) {
-                            isSliding = true; yawObject.position.y = 1.0; speedMultiplier = 1.8;
-                            setTimeout(() => { isSliding = false; yawObject.position.y = 2; speedMultiplier = 1.0; }, 400);
-                        }
-                        break;
-                }
-            });
-            document.addEventListener('keyup', (e) => {
-                switch (e.code) {
-                    case 'KeyW': moveForward = false; break;
-                    case 'KeyS': moveBackward = false; break;
-                    case 'KeyA': moveLeft = false; break;
-                    case 'KeyD': moveRight = false; break;
-                }
-            });
-            document.addEventListener('mousedown', (e) => { if(isLocked && e.button === 0) fireWeapon(); });
-        }
-        function fireWeapon() {
-            pitchObject.rotation.x += 0.02;
-            const raycaster = new THREE.Raycaster(); raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            const intersects = raycaster.intersectObjects(targets);
-            const origin = new THREE.Vector3().setFromMatrixPosition(camera.matrixWorld); origin.y -= 0.2;
-            let endpoint = new THREE.Vector3();
-            if (intersects.length > 0) {
-                const hitObj = intersects.object; endpoint.copy(intersects.point);
-                scene.remove(hitObj); targets.splice(targets.indexOf(hitObj), 1);
-                score++; killCount.innerText = score; spawnTarget();
-            } else { raycaster.ray.at(100, endpoint); }
-            createTracer(origin, endpoint);
-        }
-        function createTracer(start, end) {
-            const material = new THREE.LineBasicMaterial({ color: 0x00ffcc });
-            const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-            const line = new THREE.Line(geometry, material); scene.add(line);
-            activeTracers.push({ mesh: line, spawnTime: performance.now() });
-        }
-        function spawnTarget() {
-            const target = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 2), new THREE.MeshStandardMaterial({ color: 0xff3366, emissive: 0x441111 }));
-            target.position.set((Math.random() - 0.5) * 150, 2, (Math.random() - 0.5) * 150);
-            scene.add(target); targets.push(target);
-        }
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-        function animate() {
-            requestAnimationFrame(animate);
-            if (isLocked) {
-                const delta = clock.getDelta();
-                let friction = isGrounded ? (isSliding ? 1.5 : 8.0) : 1.5;
-                velocity.x -= velocity.x * friction * delta; velocity.z -= velocity.z * friction * delta;
-                velocity.y -= 32.0 * delta;
-                direction.z = Number(moveForward) - Number(moveBackward); direction.x = Number(moveRight) - Number(moveLeft);
-                direction.normalize();
-                const currentMoveSpeed = 45.0 * speedMultiplier;
-                if (moveForward || moveBackward) velocity.z -= direction.z * currentMoveSpeed * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * currentMoveSpeed * delta;
-                yawObject.translateX(-velocity.x * delta); yawObject.translateZ(-velocity.z * delta);
-                yawObject.position.y += velocity.y * delta;
-                if (yawObject.position.y < 2) {
-                    velocity.y = 0; yawObject.position.y = isSliding ? 1.0 : 2;
-                    if(!isGrounded) { isGrounded = true; bHopTimer = performance.now(); }
-                }
-                speedMeter.innerText = Math.round(Math.sqrt(velocity.x**2 + velocity.z**2));
-                const now = performance.now();
-                for(let i = activeTracers.length - 1; i >= 0; i--) {
-                    if(now - activeTracers[i].spawnTime > 80) { scene.remove(activeTracers[i].mesh); activeTracers.splice(i, 1); }
-                }
-            }
-            renderer.render(scene, camera);
-        }
-    </script>
-</body>
-</html>
-```
+Use code with caution.case 'KeyA': moveLeft = true; break;case 'KeyD': moveRight = true; break;case 'Digit1': switchActiveWeapon("1"); break;case 'Digit2': switchActiveWeapon("2"); break;case 'Digit3': switchActiveWeapon("3"); break;case 'Digit4': switchActiveWeapon("4"); break;case 'Space':if (isGrounded) {let bHopBoost = (performance.now() - bHopTimer < 250) ? 1.25 : 1.0;velocity.y = 12.0;velocity.x *= bHopBoost;velocity.z *= bHopBoost;isGrounded = false;}break;case 'ShiftLeft':if(!isSliding && isGrounded) {isSliding = true;yawObject.position.y = 1.0;speedMultiplier = 1.85;setTimeout(() => {isSliding = false;yawObject.position.y = 2;speedMultiplier = 1.0;}, 350);}break;}});document.addEventListener('keyup', (e) => {switch (e.code) {case 'KeyW': moveForward = false; break;case 'KeyS': moveBackward = false; break;case 'KeyA': moveLeft = false; break;case 'KeyD': moveRight = false; break;}});document.addEventListener('mousedown', (e) => {if(isLocked && e.button === 0) fireEquippedWeapon();});}function switchActiveWeapon(slotKey) {if(ARSENAL[slotKey]) {currentWeapon = ARSENAL[slotKey];document.querySelectorAll('.weapon-slot').forEach(slot => slot.classList.remove('active'));document.getElementById('slot-' + slotKey).classList.add('active');camera.fov = (slotKey === "3") ? 38 : 75;camera.updateProjectionMatrix();}}function fireEquippedWeapon() {const timeNow = performance.now();if (timeNow - lastFireTime < currentWeapon.fireRate) return;lastFireTime = timeNow;pitchObject.rotation.x += currentWeapon.recoil;const originVector = new THREE.Vector3().setFromMatrixPosition(camera.matrixWorld);for (let pellet = 0; pellet < currentWeapon.pellets; pellet++) {const targetRaycaster = new THREE.Raycaster();const spreadX = (Math.random() - 0.5) * currentWeapon.spread;const spreadY = (Math.random() - 0.5) * currentWeapon.spread;targetRaycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), camera);const enemyTargetMeshes = enemies.map(e => e.mesh);const hitIntersections = targetRaycaster.intersectObjects(enemyTargetMeshes);let pointTarget = new THREE.Vector3();if (hitIntersections.length > 0 && hitIntersections.distance <= currentWeapon.range) {const struckMesh = hitIntersections.object;pointTarget.copy(hitIntersections.point);const enemyRefIndex = enemies.findIndex(e => e.mesh === struckMesh);if(enemyRefIndex !== -1) {enemies[enemyRefIndex].health -= currentWeapon.damage;struckMesh.material.color.setHex(0xffffff);setTimeout(() => { if(struckMesh.material) struckMesh.material.color.setHex(0xff3344); }, 45);}} else {targetRaycaster.ray.at(currentWeapon.range, pointTarget);}renderLaserTracer(originVector, pointTarget, currentWeapon.color);}}function renderLaserTracer(start, end, colorHex) {const materialLine = new THREE.LineBasicMaterial({ color: colorHex });const lineGeometry = new THREE.BufferGeometry().setFromPoints([start, end]);const structuralLineMesh = new THREE.Line(lineGeometry, materialLine);scene.add(structuralLineMesh);activeTracers.push({ mesh: structuralLineMesh, timestamp: performance.now() });}function spawnEnemy() {const groupUnit = new THREE.Group();const coreTorso = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.5, 1.5), new THREE.MeshStandardMaterial({ color: 0xff3344, roughness: 0.4 }));coreTorso.position.y = 1.25;groupUnit.add(coreTorso);const sensorEye = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 1.0), new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0xff0055 }));sensorEye.position.set(0, 2.3, 0.3);groupUnit.add(sensorEye);let calculatedX = (Math.random() - 0.5) * 200;let calculatedZ = (Math.random() - 0.5) * 200;if(Math.abs(calculatedX) < 20) calculatedX += 35;groupUnit.position.set(calculatedX, 0, calculatedZ);scene.add(groupUnit);enemies.push({ mesh: coreTorso, rootGroup: groupUnit, health: 100, lastShotTimestamp: 0 });}function runEnemyAICycles(delta, now) {const activePlayerPos = new THREE.Vector3(yawObject.position.x, 0, yawObject.position.z);for (let i = enemies.length - 1; i >= 0; i--) {const entityDrone = enemies[i];if (entityDrone.health <= 0) {scene.remove(entityDrone.rootGroup);enemies.splice(i, 1);playerScore += 15;document.getElementById('kill-count').innerText = playerScore < 100 ? ("0" + playerScore).slice(-2) : playerScore;spawnEnemy();continue;}const positionDrone = new THREE.Vector3(entityDrone.rootGroup.position.x, 0, entityDrone.rootGroup.position.z);const currentDistanceScalar = positionDrone.distanceTo(activePlayerPos);entityDrone.rootGroup.lookAt(yawObject.position.x, entityDrone.rootGroup.position.y, yawObject.position.z);if (currentDistanceScalar > 14) {const headingVector = new THREE.Vector3().subVectors(activePlayerPos, positionDrone).normalize();entityDrone.rootGroup.position.addScaledVector(headingVector, 6.0 * delta);}if (currentDistanceScalar  1200) {entityDrone.lastShotTimestamp = now;const emitterPoint = entityDrone.rootGroup.position.clone().add(new THREE.Vector3(0, 2.2, 0));renderLaserTracer(emitterPoint, yawObject.position.clone(), 0xff3344);if (Math.random() > 0.50 && !isSliding) {playerHealth -= 10;document.getElementById('health-meter').innerText = Math.max(0, playerHealth);if(playerHealth <= 0) runSimulationCrash();}}}}function runSimulationCrash() {isGameOver = true;isLocked = false;document.exitPointerLock();menuTitle.innerText = "INTERFACE TERMINATED";menuSub.innerText = "System Failure. Score: " + playerScore;playBtn.innerText = "Reboot Combat Cycle";instructions.style.display = 'block';}function restartSimulation() {playerHealth = 100; playerScore = 0; isGameOver = false;document.getElementById('health-meter').innerText = "100";document.getElementById('kill-count').innerText = "00";switchActiveWeapon("1");while(enemies.length > 0) {scene.remove(enemies[0].rootGroup);enemies.shift();}yawObject.position.set(0, 2, 0);velocity.set(0,0,0);for(let i = 0; i < 5; i++) spawnEnemy();document.body.requestPointerLock();}function onWindowResize() {camera.aspect = window.innerWidth / window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth, window.innerHeight);}function animate() {requestAnimationFrame(animate);const delta = clock.getDelta();const now = performance.now();if (isLocked && !isGameOver) {let decelerationRate = isGrounded ? (isSliding ? 1.35 : 7.8) : 1.35;velocity.x -= velocity.x * decelerationRate * delta;velocity.z -= velocity.z * decelerationRate * delta;velocity.y -= 34.0 * delta;direction.z = Number(moveForward) - Number(moveBackward);direction.x = Number(moveRight) - Number(moveLeft);direction.normalize();const constantAcceleration = 48.0 * speedMultiplier;if (moveForward || moveBackward) velocity.z -= direction.z * constantAcceleration * delta;if (moveLeft || moveRight) velocity.x -= direction.x * constantAcceleration * delta;yawObject.translateX(-velocity.x * delta);yawObject.translateZ(-velocity.z * delta);yawObject.position.y += velocity.y * delta;if (yawObject.position.y < 2) {velocity.y = 0;yawObject.position.y = isSliding ? 1.0 : 2;if(!isGrounded) {isGrounded = true;bHopTimer = now;}}document.getElementById('speed-meter').innerText = Math.round(Math.sqrt(velocity.x2 + velocity.z2));runEnemyAICycles(delta, now);}for(let i = activeTracers.length - 1; i >= 0; i--) {if(now - activeTracers[i].timestamp > 60) {scene.remove(activeTracers[i].mesh);activeTracers.splice(i, 1);}}renderer.render(scene, camera);}
